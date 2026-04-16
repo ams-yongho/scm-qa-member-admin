@@ -1,0 +1,25 @@
+// audit DB (SQLite) — owned by this app
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../../lib/db/audit/client"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("AUDIT_DATABASE_URL")
+}
+
+model AuditLog {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now())
+  operator     String
+  action       String // "buyer.update" | "buyer.delete"
+  buyerId      Int
+  buyerLoginId String
+  before       String // JSON snapshot before mutation
+  after        String? // JSON snapshot after mutation; null for delete
+
+  @@index([buyerId])
+  @@index([createdAt])
+}

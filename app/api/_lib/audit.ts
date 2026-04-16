@@ -1,7 +1,7 @@
 import { prismaSym } from "@/lib/db/sym";
 import { prismaAudit } from "@/lib/db/audit";
 
-export type AuditAction = "buyer.update" | "buyer.delete";
+export type AuditAction = "buyer.update" | "buyer.delete" | "car.softDelete";
 
 interface WithAuditOptions<T> {
   action: AuditAction;
@@ -66,6 +66,36 @@ export async function withAudit<T>({
   }
 
   return { data, auditFailed };
+}
+
+/**
+ * Lightweight audit insert for non-buyer entities (e.g. car soft-delete).
+ * Caller provides the before/after snapshots directly.
+ */
+export async function insertAuditLog(opts: {
+  operator: string;
+  action: AuditAction;
+  buyerId: number;
+  buyerLoginId: string;
+  before: unknown;
+  after: unknown | null;
+}): Promise<boolean> {
+  try {
+    await prismaAudit.auditLog.create({
+      data: {
+        operator: opts.operator,
+        action: opts.action,
+        buyerId: opts.buyerId,
+        buyerLoginId: opts.buyerLoginId,
+        before: JSON.stringify(opts.before, replacer),
+        after: opts.after ? JSON.stringify(opts.after, replacer) : null,
+      },
+    });
+    return true;
+  } catch (err) {
+    console.error("[audit] insert failed", err);
+    return false;
+  }
 }
 
 // Prisma returns Date objects and bigints; serialize cleanly.

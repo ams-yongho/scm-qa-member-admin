@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
+import { Car, Trash2, X } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -24,7 +24,9 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   useBuyerQuery,
   useUpdateBuyerMutation,
+  useSoftDeleteCarMutation,
   type BuyerDetail,
+  type BuyerCar,
 } from "@/lib/queries/buyers";
 import { BuyerDeleteDialog } from "./buyer-delete-dialog";
 
@@ -67,6 +69,7 @@ export function BuyerEditSheet({ buyerId, open, onOpenChange }: BuyerEditSheetPr
   const query = useBuyerQuery(buyerId);
   const buyer = query.data;
   const update = useUpdateBuyerMutation(buyerId ?? 0);
+  const deleteCar = useSoftDeleteCarMutation(buyerId ?? 0);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
 
   const form = useForm<FormValues>({
@@ -179,7 +182,7 @@ export function BuyerEditSheet({ buyerId, open, onOpenChange }: BuyerEditSheetPr
                     주소 {buyer._count.partsfit_mall_buyer_address}
                   </Badge>
                   <Badge variant="outline">
-                    차량 {buyer._count.partsfit_mall_buyer_car}
+                    차량 {buyer.partsfit_mall_buyer_car.length}
                   </Badge>
                 </div>
               </SheetHeader>
@@ -264,6 +267,44 @@ export function BuyerEditSheet({ buyerId, open, onOpenChange }: BuyerEditSheetPr
 
                 <Separator />
 
+                {/* 등록 차량 */}
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                    <Car className="h-4 w-4" />
+                    등록 차량
+                    <span className="text-xs text-muted-foreground font-normal">
+                      ({buyer.partsfit_mall_buyer_car.length}대)
+                    </span>
+                  </h3>
+                  {buyer.partsfit_mall_buyer_car.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">등록된 차량이 없습니다.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {buyer.partsfit_mall_buyer_car.map((car) => (
+                        <CarRow
+                          key={car.id}
+                          car={car}
+                          deleting={deleteCar.isPending}
+                          onDelete={async () => {
+                            try {
+                              const res = await deleteCar.mutateAsync(car.id);
+                              if (res.auditFailed) {
+                                toast.warning("차량은 삭제됐지만 감사 로그 기록에 실패했습니다.");
+                              } else {
+                                toast.success(`차량 #${car.id} 삭제됨 (${car.plate_number ?? "번호판 없음"})`);
+                              }
+                            } catch (err) {
+                              toast.error(err instanceof Error ? err.message : "차량 삭제 실패");
+                            }
+                          }}
+                        />
+                      ))}
+                    </ul>
+                  )}
+                </section>
+
+                <Separator />
+
                 {/* Danger zone */}
                 <section className="space-y-2">
                   <h3 className="text-sm font-semibold text-destructive">위험 구역</h3>
@@ -316,5 +357,79 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <Label className="text-xs text-muted-foreground">{label}</Label>
       {children}
     </div>
+  );
+}
+
+function CarRow({
+  car,
+  deleting,
+  onDelete,
+}: {
+  car: BuyerCar;
+  deleting: boolean;
+  onDelete: () => void;
+}) {
+  const [confirming, setConfirming] = React.useState(false);
+
+  return (
+    <li className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-xs text-muted-foreground">#{car.id}</span>
+          <span className="font-medium truncate">
+            {car.plate_number || "(번호판 없음)"}
+          </span>
+          <Badge variant="outline" className="text-[10px]">
+            {car.registration_type}
+          </Badge>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {[
+            car.owner && `소유자: ${car.owner}`,
+            car.vin_code && `VIN: ${car.vin_code}`,
+            car.car_year && `연식: ${car.car_year}`,
+          ]
+            .filter(Boolean)
+            .join(" · ") || "상세정보 없음"}
+        </div>
+      </div>
+      <div className="ml-2 flex-shrink-0">
+        {confirming ? (
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={deleting}
+              onClick={() => {
+                onDelete();
+                setConfirming(false);
+              }}
+            >
+              {deleting ? "삭제 중…" : "확인"}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setConfirming(false)}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            onClick={() => setConfirming(true)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </div>
+    </li>
   );
 }

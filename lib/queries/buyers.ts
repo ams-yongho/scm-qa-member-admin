@@ -22,6 +22,18 @@ export interface BuyerListResponse {
   size: number;
 }
 
+export interface BuyerCar {
+  id: number;
+  registration_type: string;
+  owner: string | null;
+  plate_number: string | null;
+  vin_code: string | null;
+  car_brand_id: number | null;
+  car_model_id: number | null;
+  car_year: string | null;
+  created_at: string | null;
+}
+
 export interface BuyerDetail extends BuyerListItem {
   password: string | null;
   bank_name: string | null;
@@ -34,6 +46,7 @@ export interface BuyerDetail extends BuyerListItem {
   max_car_limit: number | null;
   updated_at: string | null;
   partsfit_mall_buyer_oauth: { provider: string }[];
+  partsfit_mall_buyer_car: BuyerCar[];
   _count: {
     partsfit_mall_buyer_oauth: number;
     partsfit_mall_buyer_address: number;
@@ -87,6 +100,22 @@ export function useUpdateBuyerMutation(id: number) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: buyerKeys.all });
+    },
+  });
+}
+
+export function useSoftDeleteCarMutation(buyerId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (carId: number) => {
+      const res = await api.delete(`/buyers/${buyerId}/cars/${carId}`);
+      return {
+        data: res.data,
+        auditFailed: res.headers["x-audit-failed"] === "true",
+      };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: buyerKeys.detail(buyerId) });
     },
   });
 }

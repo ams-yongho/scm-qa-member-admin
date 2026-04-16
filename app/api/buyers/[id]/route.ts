@@ -37,6 +37,21 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
           },
         },
         partsfit_mall_buyer_oauth: { select: { provider: true } },
+        partsfit_mall_buyer_car: {
+          where: { deleted_at: null },
+          select: {
+            id: true,
+            registration_type: true,
+            owner: true,
+            plate_number: true,
+            vin_code: true,
+            car_brand_id: true,
+            car_model_id: true,
+            car_year: true,
+            created_at: true,
+          },
+          orderBy: { id: "desc" },
+        },
       },
     });
     if (!buyer) return notFound("Buyer not found");

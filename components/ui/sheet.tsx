@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -56,8 +57,13 @@ export const SheetContent = React.forwardRef<
     <SheetPrimitive.Content
       ref={ref}
       className={cn(sheetVariants({ side }), "flex flex-col", className)}
+      aria-describedby={undefined}
       {...props}
     >
+      {/* Fallback title for accessibility — real SheetTitle in SheetHeader overrides */}
+      <VisuallyHidden.Root asChild>
+        <SheetPrimitive.Title>Sheet</SheetPrimitive.Title>
+      </VisuallyHidden.Root>
       {children}
       <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
         <X className="h-4 w-4" />

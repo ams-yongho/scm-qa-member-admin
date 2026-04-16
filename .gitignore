@@ -138,6 +138,13 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# project-specific
+.superpowers/
+/data/
+*.db
+*.db-journal
+prisma/sym/migrations
+
 
 # claude
 .claude/worktrees/

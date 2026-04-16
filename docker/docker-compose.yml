@@ -1,0 +1,19 @@
+services:
+  scm-qa-member-admin:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: scm-qa-member-admin:latest
+    container_name: scm-qa-member-admin
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      SYM_DATABASE_URL: ${SYM_DATABASE_URL}
+      AUDIT_DATABASE_URL: file:/data/audit.db
+      READ_ONLY: ${READ_ONLY:-}
+      ALLOW_NON_STAGING: ${ALLOW_NON_STAGING:-}
+    volumes:
+      - ../data:/data
+    env_file:
+      - ../.env.local

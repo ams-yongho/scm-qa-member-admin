@@ -56,7 +56,7 @@ export default function AuditPage() {
       <header>
         <h1 className="text-xl font-semibold tracking-tight">감사 로그</h1>
         <p className="text-sm text-muted-foreground">
-          모든 회원 변경/삭제 작업의 기록입니다.
+          모든 회원·상품 변경/삭제 작업의 기록입니다.
         </p>
       </header>
 

@@ -25,4 +25,10 @@ describe("productListQuerySchema", () => {
     expect(r.size).toBe(20);
     expect(r.includeDeleted).toBe(false);
   });
+  it("includeDeleted=\"false\" 문자열은 false로 파싱한다", () => {
+    expect(productListQuerySchema.parse({ q: "abc", includeDeleted: "false" }).includeDeleted).toBe(false);
+  });
+  it("includeDeleted=\"true\" 문자열만 true", () => {
+    expect(productListQuerySchema.parse({ q: "abc", includeDeleted: "true" }).includeDeleted).toBe(true);
+  });
 });

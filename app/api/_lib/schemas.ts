@@ -52,7 +52,10 @@ export type ProductStatusUpdate = z.infer<typeof productStatusUpdateSchema>;
 
 export const productListQuerySchema = z.object({
   q: z.string().trim().min(2, "검색어는 2글자 이상").optional(),
-  includeDeleted: z.coerce.boolean().optional().default(false),
+  includeDeleted: z
+    .string()
+    .optional()
+    .transform((v) => v === "true"),
   page: z.coerce.number().int().min(1).default(1),
   size: z.coerce.number().int().min(1).max(100).default(20),
 });

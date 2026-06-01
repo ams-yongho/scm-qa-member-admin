@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PRODUCT_STATUS_VALUES } from "./status";
 
 export const buyerTypeSchema = z.enum(["PERSONAL", "BUSINESS"]);
 
@@ -34,8 +35,27 @@ export const buyerListQuerySchema = z.object({
 });
 
 export const auditListQuerySchema = z.object({
-  buyerId: z.coerce.number().int().optional(),
+  entityType: z.enum(["buyer", "product"]).optional(),
+  entityId: z.coerce.number().int().optional(),
   operator: z.string().trim().optional(),
   page: z.coerce.number().int().min(1).default(1),
   size: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+export const productStatusUpdateSchema = z
+  .object({
+    status: z.enum(PRODUCT_STATUS_VALUES),
+  })
+  .strict();
+
+export type ProductStatusUpdate = z.infer<typeof productStatusUpdateSchema>;
+
+export const productListQuerySchema = z.object({
+  q: z.string().trim().min(2, "검색어는 2글자 이상").optional(),
+  includeDeleted: z
+    .string()
+    .optional()
+    .transform((v) => v === "true"),
+  page: z.coerce.number().int().min(1).default(1),
+  size: z.coerce.number().int().min(1).max(100).default(20),
 });

@@ -61,8 +61,9 @@ export async function DELETE(
     const auditOk = await insertAuditLog({
       operator,
       action: "car.softDelete",
-      buyerId,
-      buyerLoginId: buyer.login_id ?? "",
+      entityType: "buyer",
+      entityId: buyerId,
+      entityLabel: buyer.login_id ?? "",
       before: car,
       after: updated,
     });

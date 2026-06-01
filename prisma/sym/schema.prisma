@@ -106,3 +106,29 @@ model partsfit_mall_buyer_withdraw {
   customer_complaint_deleted  Boolean?
   created_at                  DateTime? @default(now()) @db.DateTime(0)
 }
+
+model product {
+  id               Int               @id @default(autoincrement())
+  part_number      String?           @db.VarChar(100)
+  sales_status     String?           @db.VarChar(30)
+  scope            String?           @db.VarChar(20)
+  thumbnail        String?           @db.VarChar(250)
+  created_at       DateTime?         @default(now()) @db.Timestamp(0)
+  updated_at       DateTime?         @default(now()) @db.Timestamp(0)
+  product_partsfit product_partsfit?
+}
+
+model product_partsfit {
+  id                Int       @id @default(autoincrement())
+  product_id        Int       @unique
+  mall_product_code String?   @db.VarChar(30)
+  product_name      String?   @db.VarChar(100)
+  status            String?   @db.VarChar(50)
+  quantity          Int?
+  price             Decimal?  @db.Decimal(12, 2)
+  display_at        DateTime? @db.Timestamp(0)
+  selling_at        DateTime? @db.Timestamp(0)
+  updated_at        DateTime? @default(now()) @db.Timestamp(0)
+  updated_by        Int?
+  product           product   @relation(fields: [product_id], references: [id])
+}

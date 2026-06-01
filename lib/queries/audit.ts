@@ -8,8 +8,9 @@ export interface AuditLogItem {
   createdAt: string;
   operator: string;
   action: string;
-  buyerId: number;
-  buyerLoginId: string;
+  entityType: string;
+  entityId: number;
+  entityLabel: string;
   before: string;
   after: string | null;
 }
@@ -22,7 +23,8 @@ export interface AuditListResponse {
 }
 
 export interface AuditFilters {
-  buyerId?: number;
+  entityType?: "buyer" | "product";
+  entityId?: number;
   operator?: string;
   page?: number;
   size?: number;

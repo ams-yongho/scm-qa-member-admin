@@ -13,6 +13,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuditQuery, type AuditLogItem } from "@/lib/queries/audit";
 import { AuditDetailSheet } from "./_components/audit-detail-sheet";
 
@@ -20,10 +27,12 @@ const PAGE_SIZE = 50;
 
 export default function AuditPage() {
   const [operatorInput, setOperatorInput] = React.useState("");
-  const [buyerIdInput, setBuyerIdInput] = React.useState("");
+  const [entityIdInput, setEntityIdInput] = React.useState("");
+  const [entityType, setEntityType] = React.useState<"buyer" | "product" | "">("");
   const [filters, setFilters] = React.useState<{
     operator?: string;
-    buyerId?: number;
+    entityType?: "buyer" | "product";
+    entityId?: number;
   }>({});
   const [page, setPage] = React.useState(1);
   const [selected, setSelected] = React.useState<AuditLogItem | null>(null);
@@ -33,10 +42,11 @@ export default function AuditPage() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const id = buyerIdInput.trim() ? Number(buyerIdInput.trim()) : undefined;
+    const idNum = entityIdInput.trim() ? Number(entityIdInput.trim()) : undefined;
     setFilters({
       operator: operatorInput.trim() || undefined,
-      buyerId: id && Number.isInteger(id) ? id : undefined,
+      entityType: entityType || undefined,
+      entityId: idNum && Number.isInteger(idNum) ? idNum : undefined,
     });
     setPage(1);
   };
@@ -46,7 +56,7 @@ export default function AuditPage() {
       <header>
         <h1 className="text-xl font-semibold tracking-tight">감사 로그</h1>
         <p className="text-sm text-muted-foreground">
-          모든 회원 변경/삭제 작업의 기록입니다.
+          모든 회원·상품 변경/삭제 작업의 기록입니다.
         </p>
       </header>
 
@@ -60,10 +70,23 @@ export default function AuditPage() {
             className="pl-8 w-56"
           />
         </div>
+        <Select
+          value={entityType === "" ? "__all__" : entityType}
+          onValueChange={(v) => setEntityType(v === "__all__" ? "" : (v as "buyer" | "product"))}
+        >
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder="전체 종류" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">전체 종류</SelectItem>
+            <SelectItem value="buyer">회원</SelectItem>
+            <SelectItem value="product">상품</SelectItem>
+          </SelectContent>
+        </Select>
         <Input
-          value={buyerIdInput}
-          onChange={(e) => setBuyerIdInput(e.target.value)}
-          placeholder="buyer id"
+          value={entityIdInput}
+          onChange={(e) => setEntityIdInput(e.target.value)}
+          placeholder="entity id"
           className="w-32"
           type="number"
           min={1}
@@ -86,20 +109,21 @@ export default function AuditPage() {
               <TableHead className="w-44">시각</TableHead>
               <TableHead className="w-32">operator</TableHead>
               <TableHead className="w-32">action</TableHead>
-              <TableHead className="w-24">buyer id</TableHead>
-              <TableHead>buyer login_id</TableHead>
+              <TableHead className="w-20">종류</TableHead>
+              <TableHead className="w-24">entity id</TableHead>
+              <TableHead>라벨</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {query.isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                   불러오는 중…
                 </TableCell>
               </TableRow>
             ) : (query.data?.items ?? []).length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                   기록 없음
                 </TableCell>
               </TableRow>
@@ -121,8 +145,13 @@ export default function AuditPage() {
                       {row.action}
                     </Badge>
                   </TableCell>
-                  <TableCell>{row.buyerId}</TableCell>
-                  <TableCell className="font-mono text-xs">{row.buyerLoginId}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {row.entityType === "product" ? "상품" : "회원"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{row.entityId}</TableCell>
+                  <TableCell className="font-mono text-xs">{row.entityLabel}</TableCell>
                 </TableRow>
               ))
             )}

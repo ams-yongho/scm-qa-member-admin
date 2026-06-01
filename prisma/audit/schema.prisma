@@ -11,15 +11,16 @@ datasource db {
 }
 
 model AuditLog {
-  id           Int      @id @default(autoincrement())
-  createdAt    DateTime @default(now())
-  operator     String
-  action       String // "buyer.update" | "buyer.delete"
-  buyerId      Int
-  buyerLoginId String
-  before       String // JSON snapshot before mutation
-  after        String? // JSON snapshot after mutation; null for delete
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  operator    String
+  action      String // "buyer.update" | "buyer.delete" | "car.softDelete" | "product.statusUpdate"
+  entityType  String // "buyer" | "product"
+  entityId    Int
+  entityLabel String
+  before      String // JSON snapshot before mutation
+  after       String? // JSON snapshot after mutation; null for delete
 
-  @@index([buyerId])
+  @@index([entityType, entityId])
   @@index([createdAt])
 }

@@ -65,14 +65,14 @@ export function AuditDetailSheet({ item, open, onOpenChange }: Props) {
               </SheetTitle>
               <SheetDescription>
                 {new Date(item.createdAt).toLocaleString("ko-KR")} · {item.operator}{" "}
-                · buyer #{item.buyerId} ({item.buyerLoginId})
+                · {item.entityType === "product" ? "상품" : "회원"} #{item.entityId} ({item.entityLabel})
               </SheetDescription>
             </SheetHeader>
 
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
               {isDelete ? (
                 <div>
-                  <h4 className="mb-2 text-sm font-semibold">삭제된 회원 스냅샷</h4>
+                  <h4 className="mb-2 text-sm font-semibold">삭제된 스냅샷</h4>
                   <pre className="rounded-md border bg-muted/40 p-3 text-xs overflow-auto">
                     {JSON.stringify(before, null, 2)}
                   </pre>

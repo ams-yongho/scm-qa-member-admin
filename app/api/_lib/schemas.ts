@@ -34,7 +34,8 @@ export const buyerListQuerySchema = z.object({
 });
 
 export const auditListQuerySchema = z.object({
-  buyerId: z.coerce.number().int().optional(),
+  entityType: z.enum(["buyer", "product"]).optional(),
+  entityId: z.coerce.number().int().optional(),
   operator: z.string().trim().optional(),
   page: z.coerce.number().int().min(1).default(1),
   size: z.coerce.number().int().min(1).max(100).default(50),

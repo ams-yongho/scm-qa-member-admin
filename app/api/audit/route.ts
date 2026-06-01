@@ -12,10 +12,11 @@ export async function GET(req: NextRequest) {
   );
   if (!parsed.success) return fromZodError(parsed.error);
 
-  const { buyerId, operator, page, size } = parsed.data;
+  const { entityType, entityId, operator, page, size } = parsed.data;
 
   const where: Prisma.AuditLogWhereInput = {};
-  if (buyerId) where.buyerId = buyerId;
+  if (entityType) where.entityType = entityType;
+  if (entityId) where.entityId = entityId;
   if (operator) where.operator = { contains: operator };
 
   try {

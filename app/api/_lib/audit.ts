@@ -1,82 +1,79 @@
-import { prismaSym } from "@/lib/db/sym";
 import { prismaAudit } from "@/lib/db/audit";
 
-export type AuditAction = "buyer.update" | "buyer.delete" | "car.softDelete";
+export type AuditAction =
+  | "buyer.update"
+  | "buyer.delete"
+  | "car.softDelete"
+  | "product.statusUpdate";
 
-interface WithAuditOptions<T> {
+export type EntityType = "buyer" | "product";
+
+interface WithAuditOptions<T, R> {
   action: AuditAction;
-  buyerId: number;
-  operator: string;
-  mutate: () => Promise<T>;
+  entityType: EntityType;
+  entityId: number;
+  entityLabel: string;
+  operator?: string;
+  /** before/after 스냅샷을 캡처하는 함수. mutate 전후로 호출된다. */
+  snapshot: () => Promise<T | null>;
+  /** 실제 sym DB 변경. 반환값이 호출자에게 전달된다. */
+  mutate: () => Promise<R>;
+  /** false면 after를 캡처하지 않고 null로 기록 (삭제). 기본 true. */
+  captureAfter?: boolean;
 }
 
-interface AuditResult<T> {
-  data: T;
+interface AuditResult<R> {
+  data: R;
   auditFailed: boolean;
 }
 
 /**
- * Wraps a sym DB mutation with audit logging.
- * - snapshot buyer BEFORE mutation
- * - run mutation
- * - snapshot buyer AFTER mutation (null for delete)
- * - insert audit row
+ * sym DB mutation을 audit 로깅으로 감싼다.
+ * - snapshot()으로 before 캡처
+ * - mutate() 실행
+ * - captureAfter면 snapshot()으로 after 캡처 (삭제는 null)
+ * - audit row insert
  *
- * Distributed transaction is impossible (two DBs). Mutation success is
- * preserved even if audit insert fails — caller should surface the failure
- * via response header so the UI can warn.
+ * 두 DB라 분산 트랜잭션 불가. audit insert 실패해도 mutation 성공은 보존하고
+ * auditFailed=true로 알린다 (호출자가 응답 헤더로 노출).
  */
-export async function withAudit<T>({
+export async function withAudit<T, R>({
   action,
-  buyerId,
+  entityType,
+  entityId,
+  entityLabel,
   operator,
+  snapshot,
   mutate,
-}: WithAuditOptions<T>): Promise<AuditResult<T>> {
-  const before = await prismaSym.partsfit_mall_buyer.findUnique({
-    where: { id: buyerId },
-  });
-  if (!before) {
-    throw new Error(`buyer ${buyerId} not found`);
-  }
-
+  captureAfter = true,
+}: WithAuditOptions<T, R>): Promise<AuditResult<R>> {
+  const before = await snapshot();
   const data = await mutate();
+  const after = captureAfter ? await snapshot() : null;
 
-  const after =
-    action === "buyer.delete"
-      ? null
-      : await prismaSym.partsfit_mall_buyer.findUnique({
-          where: { id: buyerId },
-        });
-
-  let auditFailed = false;
-  try {
-    await prismaAudit.auditLog.create({
-      data: {
-        operator,
-        action,
-        buyerId,
-        buyerLoginId: before.login_id ?? "",
-        before: JSON.stringify(before, replacer),
-        after: after ? JSON.stringify(after, replacer) : null,
-      },
-    });
-  } catch (err) {
-    auditFailed = true;
-    console.error("[audit] insert failed", err);
-  }
+  const auditFailed = !(await insertAuditLog({
+    operator: operator ?? "",
+    action,
+    entityType,
+    entityId,
+    entityLabel,
+    before,
+    after,
+  }));
 
   return { data, auditFailed };
 }
 
 /**
- * Lightweight audit insert for non-buyer entities (e.g. car soft-delete).
- * Caller provides the before/after snapshots directly.
+ * 범용 audit insert. before/after 스냅샷을 호출자가 직접 제공.
+ * 성공 시 true, 실패 시 false (예외 삼킴).
  */
 export async function insertAuditLog(opts: {
   operator: string;
   action: AuditAction;
-  buyerId: number;
-  buyerLoginId: string;
+  entityType: EntityType;
+  entityId: number;
+  entityLabel: string;
   before: unknown;
   after: unknown | null;
 }): Promise<boolean> {
@@ -85,10 +82,11 @@ export async function insertAuditLog(opts: {
       data: {
         operator: opts.operator,
         action: opts.action,
-        buyerId: opts.buyerId,
-        buyerLoginId: opts.buyerLoginId,
+        entityType: opts.entityType,
+        entityId: opts.entityId,
+        entityLabel: opts.entityLabel,
         before: JSON.stringify(opts.before, replacer),
-        after: opts.after ? JSON.stringify(opts.after, replacer) : null,
+        after: opts.after != null ? JSON.stringify(opts.after, replacer) : null,
       },
     });
     return true;
@@ -98,7 +96,7 @@ export async function insertAuditLog(opts: {
   }
 }
 
-// Prisma returns Date objects and bigints; serialize cleanly.
+// Prisma는 Date/bigint/Decimal 객체를 반환 — 깔끔히 직렬화.
 function replacer(_key: string, value: unknown) {
   if (value instanceof Date) return value.toISOString();
   if (typeof value === "bigint") return value.toString();

@@ -11,21 +11,16 @@ datasource db {
 }
 
 model AuditLog {
-  id           Int      @id @default(autoincrement())
-  createdAt    DateTime @default(now())
-  operator     String
-  action       String // "buyer.update" | "buyer.delete" | "car.softDelete" | "product.statusUpdate"
-  // 신규(일반화) 필드 — 1단계에서는 nullable, Task 2 백필 후 Task 6에서 required 전환
-  entityType   String? // "buyer" | "product"
-  entityId     Int?
-  entityLabel  String?
-  // 구 필드 — Task 2 백필 소스, Task 6에서 제거
-  buyerId      Int?
-  buyerLoginId String?
-  before       String // JSON snapshot before mutation
-  after        String? // JSON snapshot after mutation; null for delete
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  operator    String
+  action      String // "buyer.update" | "buyer.delete" | "car.softDelete" | "product.statusUpdate"
+  entityType  String // "buyer" | "product"
+  entityId    Int
+  entityLabel String
+  before      String // JSON snapshot before mutation
+  after       String? // JSON snapshot after mutation; null for delete
 
   @@index([entityType, entityId])
-  @@index([buyerId])
   @@index([createdAt])
 }

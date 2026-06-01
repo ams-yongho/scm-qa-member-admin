@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, ScrollText } from "lucide-react";
+import { Users, Package, ScrollText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OperatorPicker } from "./operator-picker";
 
 const tabs = [
   { href: "/members", label: "회원 관리", icon: Users },
+  { href: "/products", label: "상품 관리", icon: Package },
   { href: "/audit", label: "감사 로그", icon: ScrollText },
 ];
 
@@ -19,7 +20,7 @@ export function TopNav() {
       <div className="flex h-14 items-center px-6">
         <div className="mr-6 flex items-center gap-2">
           <span className="text-sm font-semibold tracking-tight">
-            SCM QA · 회원 관리
+            SCM QA · 회원/상품 관리
           </span>
         </div>
 

@@ -87,15 +87,20 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if (data.car_unlimited === true) data.max_car_limit = null;
 
   try {
+    const existing = await prismaSym.partsfit_mall_buyer.findUnique({
+      where: { id },
+      select: { login_id: true },
+    });
+    if (!existing) return notFound("Buyer not found");
+
     const result = await withAudit({
       action: "buyer.update",
-      buyerId: id,
+      entityType: "buyer",
+      entityId: id,
+      entityLabel: existing.login_id ?? "",
       operator,
-      mutate: () =>
-        prismaSym.partsfit_mall_buyer.update({
-          where: { id },
-          data,
-        }),
+      snapshot: () => prismaSym.partsfit_mall_buyer.findUnique({ where: { id } }),
+      mutate: () => prismaSym.partsfit_mall_buyer.update({ where: { id }, data }),
     });
 
     const res = NextResponse.json(result.data);
@@ -142,13 +147,15 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
   try {
     const result = await withAudit({
       action: "buyer.delete",
-      buyerId: id,
+      entityType: "buyer",
+      entityId: id,
+      entityLabel: buyer.login_id ?? "",
       operator,
+      captureAfter: false,
+      snapshot: () => prismaSym.partsfit_mall_buyer.findUnique({ where: { id } }),
       mutate: () =>
         prismaSym.$transaction(async (tx) => {
-          // Manual cleanup: withdraw has no FK
           await tx.partsfit_mall_buyer_withdraw.deleteMany({ where: { buyer_id: id } });
-          // CASCADE handles oauth/address/car
           return tx.partsfit_mall_buyer.delete({ where: { id } });
         }),
     });

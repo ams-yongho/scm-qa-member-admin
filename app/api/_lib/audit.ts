@@ -8,14 +8,14 @@ export type AuditAction =
 
 export type EntityType = "buyer" | "product";
 
-interface WithAuditOptions<T, R> {
+interface WithAuditOptions<R> {
   action: AuditAction;
   entityType: EntityType;
   entityId: number;
   entityLabel: string;
   operator?: string;
   /** before/after 스냅샷을 캡처하는 함수. mutate 전후로 호출된다. */
-  snapshot: () => Promise<T | null>;
+  snapshot: () => Promise<unknown>;
   /** 실제 sym DB 변경. 반환값이 호출자에게 전달된다. */
   mutate: () => Promise<R>;
   /** false면 after를 캡처하지 않고 null로 기록 (삭제). 기본 true. */
@@ -37,7 +37,7 @@ interface AuditResult<R> {
  * 두 DB라 분산 트랜잭션 불가. audit insert 실패해도 mutation 성공은 보존하고
  * auditFailed=true로 알린다 (호출자가 응답 헤더로 노출).
  */
-export async function withAudit<T, R>({
+export async function withAudit<R>({
   action,
   entityType,
   entityId,
@@ -46,7 +46,7 @@ export async function withAudit<T, R>({
   snapshot,
   mutate,
   captureAfter = true,
-}: WithAuditOptions<T, R>): Promise<AuditResult<R>> {
+}: WithAuditOptions<R>): Promise<AuditResult<R>> {
   const before = await snapshot();
   const data = await mutate();
   const after = captureAfter ? await snapshot() : null;
